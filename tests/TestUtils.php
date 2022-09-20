@@ -8,7 +8,7 @@ class TestUtils{
      * @return array
      */
     public static function getTestFileLines($testFile){
-        return file(__DIR__.'\\'.$testFile);
+        return file(__DIR__.DIRECTORY_SEPARATOR.$testFile);
     }
 
 }
