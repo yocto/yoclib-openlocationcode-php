@@ -26,5 +26,8 @@
     "psr-4": {
       "YOCLIB\\OpenLocationCode\\Tests\\": "tests/"
     }
+  },
+  "scripts": {
+    "test": "phpunit"
   }
 }
