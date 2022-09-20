@@ -28,10 +28,10 @@ class DecodingTest extends TestCase{
             $decoded = (new OpenLocationCode($testData->code))->decode();
 
             $this->assertEquals($testData->length,$decoded->getLength(),'Wrong length for code '.$testData->code);
-            $this->assertEquals($testData->decodedLatitudeLo,$decoded->getSouthLatitude(),'Wrong low latitude for code '.$testData->code);
-            $this->assertEquals($testData->decodedLatitudeHi,$decoded->getNorthLatitude(),'Wrong high latitude for code '.$testData->code);
-            $this->assertEquals($testData->decodedLongitudeLo,$decoded->getWestLongitude(),'Wrong low longitude for code '.$testData->code);
-            $this->assertEquals($testData->decodedLongitudeHi,$decoded->getEastLongitude(),'Wrong high longitude for code '.$testData->code);
+            $this->assertEqualsWithDelta($testData->decodedLatitudeLo,$decoded->getSouthLatitude(),self::PRECISION,'Wrong low latitude for code '.$testData->code);
+            $this->assertEqualsWithDelta($testData->decodedLatitudeHi,$decoded->getNorthLatitude(),self::PRECISION,'Wrong high latitude for code '.$testData->code);
+            $this->assertEqualsWithDelta($testData->decodedLongitudeLo,$decoded->getWestLongitude(),self::PRECISION,'Wrong low longitude for code '.$testData->code);
+            $this->assertEqualsWithDelta($testData->decodedLongitudeHi,$decoded->getEastLongitude(),self::PRECISION,'Wrong high longitude for code '.$testData->code);
         }
     }
 

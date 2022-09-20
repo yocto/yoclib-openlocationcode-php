@@ -28,13 +28,13 @@ class ShorteningTest extends TestCase{
             }
             $olc = new OpenLocationCode($testData->code);
             $shortened = $olc->shorten($testData->referenceLatitude,$testData->referenceLongitude);
-            $this->assertEquals($testData->code,$shortened->getCode(),'Wrong shortening of code '.$testData->code);
+            $this->assertEquals($testData->shortCode,$shortened->getCode(),'Wrong shortening of code '.$testData->code);
         }
     }
 
     public function testRecovering(){
         foreach($this->testDataList AS $testData){
-            if('B'!==$testData->testType && 'S'!==$testData->testType){
+            if('B'!==$testData->testType && 'R'!==$testData->testType){
                 continue;
             }
             $olc = new OpenLocationCode($testData->shortCode);

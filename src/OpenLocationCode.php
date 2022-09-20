@@ -70,8 +70,8 @@ class OpenLocationCode{
 
             $revCode = '';
 
-            $latVal = round(($latitude+self::LATITUDE_MAX)*self::LAT_INTEGER_MULTIPLIER*1e6)/1e6;
-            $lngVal = round(($longitude+self::LONGITUDE_MAX)*self::LNG_INTEGER_MULTIPLIER*1e6)/1e6;
+            $latVal = (int) round(($latitude+self::LATITUDE_MAX)*self::LAT_INTEGER_MULTIPLIER*1e6)/1e6;
+            $lngVal = (int) round(($longitude+self::LONGITUDE_MAX)*self::LNG_INTEGER_MULTIPLIER*1e6)/1e6;
 
             if($codeLength>self::PAIR_CODE_LENGTH){
                 for($i=0;$i<self::GRID_CODE_LENGTH;$i++){
@@ -83,8 +83,8 @@ class OpenLocationCode{
                     $lngVal /= self::GRID_COLUMNS;
                 }
             }else{
-                $latVal = $latVal/pow(self::GRID_ROWS,self::GRID_CODE_LENGTH);
-                $lngVal = $lngVal/pow(self::GRID_COLUMNS,self::GRID_CODE_LENGTH);
+                $latVal = (int) ($latVal/pow(self::GRID_ROWS,self::GRID_CODE_LENGTH));
+                $lngVal = (int) ($lngVal/pow(self::GRID_COLUMNS,self::GRID_CODE_LENGTH));
             }
 
             for($i=0;$i<self::PAIR_CODE_LENGTH/2;$i++){
@@ -146,13 +146,13 @@ class OpenLocationCode{
         for($i=0;$i<min(strlen($clean),self::PAIR_CODE_LENGTH);$i+=2){
             $latPlaceVal /= self::ENCODING_BASE;
             $lngPlaceVal /= self::ENCODING_BASE;
-            $latVal += strpos(self::CODE_ALPHABET,substr($clean,$i,1)) * $latPlaceVal;
-            $latVal += strpos(self::CODE_ALPHABET,substr($clean,$i+1,1)) * $lngPlaceVal;
+            $latVal += self::indexOf(self::CODE_ALPHABET,substr($clean,$i,1)) * $latPlaceVal;
+            $lngVal += self::indexOf(self::CODE_ALPHABET,substr($clean,$i+1,1)) * $lngPlaceVal;
         }
         for($i=self::PAIR_CODE_LENGTH;$i<min(strlen($clean),self::MAX_DIGIT_COUNT);$i++){
             $latPlaceVal /= self::GRID_ROWS;
             $lngPlaceVal /= self::GRID_COLUMNS;
-            $digit = strpos(self::CODE_ALPHABET,substr($clean,$i,1));
+            $digit = self::indexOf(self::CODE_ALPHABET,substr($clean,$i,1));
             $row = $digit/self::GRID_COLUMNS;
             $col = $digit%self::GRID_COLUMNS;
             $latVal += $row*$latPlaceVal;
@@ -179,7 +179,7 @@ class OpenLocationCode{
      * @return bool
      */
     public function isFull(){
-        return strpos($this->code,self::SEPARATOR)===self::SEPARATOR_POSITION;
+        return self::indexOf($this->code,self::SEPARATOR)==self::SEPARATOR_POSITION;
     }
 
     /**
@@ -195,7 +195,7 @@ class OpenLocationCode{
      * @return bool
      */
     public function isShort(){
-        return strpos($this->code,self::SEPARATOR)>=0 && strpos($this->code,self::SEPARATOR)<self::SEPARATOR_POSITION;
+        return self::indexOf($this->code,self::SEPARATOR)>=0 && self::indexOf($this->code,self::SEPARATOR)<self::SEPARATOR_POSITION;
     }
 
     /**
@@ -211,7 +211,7 @@ class OpenLocationCode{
      * @return bool
      */
     public function isPadded(){
-        return strpos($this->code,self::PADDING_CHARACTER)>=0;
+        return self::indexOf($this->code,self::PADDING_CHARACTER)>=0;
     }
 
     /**
@@ -228,7 +228,7 @@ class OpenLocationCode{
             throw new InvalidArgumentException('shorten() method could only be called on a full code.');
         }
         if($this->isPadded()){
-            throw  new InvalidArgumentException('shorten() method can not be called on a padded code.');
+            throw new InvalidArgumentException('shorten() method can not be called on a padded code.');
         }
 
         $codeArea = $this->decode();
@@ -254,7 +254,7 @@ class OpenLocationCode{
         $referenceLatitude = self::clipLatitude($referenceLatitude);
         $referenceLongitude = self::normalizeLongitude($referenceLongitude);
 
-        $digitsToRecover = self::SEPARATOR_POSITION - strpos($this->code,self::SEPARATOR);
+        $digitsToRecover = self::SEPARATOR_POSITION - self::indexOf($this->code,self::SEPARATOR);
         $prefixPrecision = pow(self::ENCODING_BASE,2-($digitsToRecover/2));
 
         $recoveredPrefix = substr((new self($referenceLatitude,$referenceLongitude))->getCode(),0,$digitsToRecover);
@@ -305,11 +305,11 @@ class OpenLocationCode{
         }
         $code = strtoupper($code);
 
-        $separatorPosition = strpos($code,self::SEPARATOR);
-        if($separatorPosition===false){
+        $separatorPosition = self::indexOf($code,self::SEPARATOR);
+        if($separatorPosition==-1){
             return false;
         }
-        if($separatorPosition!=strpos($code,self::SEPARATOR)){
+        if($separatorPosition!==self::indexOf($code,self::SEPARATOR)){
             return false;
         }
         if($separatorPosition%2!==0 || $separatorPosition>self::SEPARATOR_POSITION){
@@ -317,18 +317,18 @@ class OpenLocationCode{
         }
 
         if($separatorPosition==self::SEPARATOR_POSITION){
-            if(strpos(self::CODE_ALPHABET,substr($code,0,1))>8){
+            if(self::indexOf(self::CODE_ALPHABET,substr($code,0,1))>8){
                 return false;
             }
 
-            if(strpos(self::CODE_ALPHABET,substr($code,1,1))>17){
+            if(self::indexOf(self::CODE_ALPHABET,substr($code,1,1))>17){
                 return false;
             }
         }
 
         $paddingStarted = false;
         for($i=0;$i<$separatorPosition;$i++){
-            if(strpos(self::CODE_ALPHABET,substr($code,$i,1))===false && substr($code,$i,1)!==self::PADDING_CHARACTER){
+            if(self::indexOf(self::CODE_ALPHABET,substr($code,$i,1))==-1 && substr($code,$i,1)!==self::PADDING_CHARACTER){
                 return false;
             }
             if($paddingStarted){
@@ -355,7 +355,7 @@ class OpenLocationCode{
                 return false;
             }
             for($i=$separatorPosition+1;$i<strlen($code);$i++){
-                if(strpos(self::CODE_ALPHABET,substr($code,$i,1))===false){
+                if(self::indexOf(self::CODE_ALPHABET,substr($code,$i,1))==-1){
                     return false;
                 }
             }
@@ -414,9 +414,17 @@ class OpenLocationCode{
      */
     private static function computeLatitudePrecision($codeLength){
         if($codeLength<=self::CODE_PRECISION_NORMAL){
-            return pow(self::ENCODING_BASE,($codeLength / -2 + 2));
+            return self::ENCODING_BASE ** ($codeLength / -2 + 2);
         }
-        return pow(self::ENCODING_BASE,-3) / pow(self::GRID_ROWS,$codeLength - self::PAIR_CODE_LENGTH);
+        return (self::ENCODING_BASE ** -3) / (self::GRID_ROWS ** ($codeLength - self::PAIR_CODE_LENGTH));
+    }
+
+    private static function indexOf($haystack,$needle,$offset=0){
+        $pos = strpos($haystack,$needle,$offset);
+        if($pos===false){
+            return -1;
+        }
+        return $pos;
     }
 
 }
