@@ -16,7 +16,7 @@ class DecodingTest extends TestCase{
     public function setUp(): void{
         $lines = TestUtils::getTestFileLines('decoding.csv');
         foreach($lines AS $line){
-            if(str_starts_with($line,'#')){
+            if(substr($line, 0, 1)=='#'){
                 continue;
             }
             $this->testDataList[] = new DecodingTest_TestData($line);

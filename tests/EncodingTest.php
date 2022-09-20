@@ -16,7 +16,7 @@ class EncodingTest extends TestCase{
     public function setUp(): void{
         $lines = TestUtils::getTestFileLines('encoding.csv');
         foreach($lines AS $line){
-            if(str_starts_with($line,'#') || strlen(trim($line))==0){
+            if(substr($line, 0, 1)=='#' || strlen(trim($line))==0){
                 continue;
             }
             $this->testDataList[] = new EncodingTest_TestData($line);

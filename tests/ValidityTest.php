@@ -14,7 +14,7 @@ class ValidityTest extends TestCase{
     public function setUp(): void{
         $lines = TestUtils::getTestFileLines('validityTests.csv');
         foreach($lines AS $line){
-            if(str_starts_with($line,'#')){
+            if(substr($line, 0, 1)=='#'){
                 continue;
             }
             $this->testDataList[] = new ValidityTest_TestData($line);

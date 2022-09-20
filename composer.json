@@ -1,7 +1,7 @@
 {
   "name": "yocto/yoclib-openlocationcode",
   "type": "library",
-  "description": "This yocLibrary enables your project to read and write MPEGURL files in PHP.",
+  "description": "This yocLibrary enables your project to encode and decode Open Location Codes in PHP.",
   "keywords":[
     "composer",
     "openlocationcode",
