@@ -26,6 +26,7 @@ class ShorteningTest extends TestCase{
             if('B'!==$testData->testType && 'S'!==$testData->testType){
                 continue;
             }
+            var_dump($testData);
             $olc = new OpenLocationCode($testData->code);
             $shortened = $olc->shorten($testData->referenceLatitude,$testData->referenceLongitude);
             $this->assertEquals($testData->shortCode,$shortened->getCode(),'Wrong shortening of code '.$testData->code);

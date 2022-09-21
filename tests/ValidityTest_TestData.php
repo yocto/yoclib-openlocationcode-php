@@ -19,7 +19,6 @@ class ValidityTest_TestData{
         $this->isValid = filter_var($parts[1],FILTER_VALIDATE_BOOLEAN);
         $this->isShort = filter_var($parts[2],FILTER_VALIDATE_BOOLEAN);
         $this->isFull = filter_var($parts[3],FILTER_VALIDATE_BOOLEAN);
-//        var_dump($this);
     }
 
 }

@@ -1,8 +1,8 @@
 <?php
 namespace YOCLIB\OpenLocationCode;
 
-use Exception;
 use InvalidArgumentException;
+use RuntimeException;
 
 class OpenLocationCode{
 
@@ -46,16 +46,19 @@ class OpenLocationCode{
      * @param double|string $latitudeOrCode
      * @param ?double $longitude
      * @param ?int $codeLength
+     * @throws InvalidArgumentException
      */
     public function __construct($latitudeOrCode,$longitude=null,$codeLength=self::CODE_PRECISION_NORMAL){
         if(func_num_args()===1 && is_string($latitudeOrCode)){
-            $code = $latitudeOrCode;
+            $code = (string) $latitudeOrCode;
             if(!self::isValidCode(strtoupper($code))){
                 throw new InvalidArgumentException('The provided code \''.$code.'\' is not a valid Open Location Code.');
             }
             $this->code = strtoupper($code);
         }elseif((func_num_args()==2 || func_num_args()==3) && is_numeric($latitudeOrCode) && is_numeric($longitude) && is_int($codeLength)){
-            $latitude = $latitudeOrCode;
+            $latitude = (double) $latitudeOrCode;
+            $longitude = (double) $longitude;
+            $codeLength = $codeLength ?? self::PAIR_CODE_LENGTH;
 
             $codeLength = min($codeLength,self::MAX_DIGIT_COUNT);
             if($codeLength<self::PAIR_CODE_LENGTH && $codeLength%2==1 || $codeLength<4){
@@ -70,28 +73,28 @@ class OpenLocationCode{
 
             $revCode = '';
 
-            $latVal = (int) round(($latitude+self::LATITUDE_MAX)*self::LAT_INTEGER_MULTIPLIER*1e6)/1e6;
-            $lngVal = (int) round(($longitude+self::LONGITUDE_MAX)*self::LNG_INTEGER_MULTIPLIER*1e6)/1e6;
+            $latVal = self::floatToInt(round(($latitude+self::LATITUDE_MAX)*self::LAT_INTEGER_MULTIPLIER,6));
+            $lngVal = self::floatToInt(round(($longitude+self::LONGITUDE_MAX)*self::LNG_INTEGER_MULTIPLIER,6));
 
             if($codeLength>self::PAIR_CODE_LENGTH){
                 for($i=0;$i<self::GRID_CODE_LENGTH;$i++){
                     $latDigit = $latVal%self::GRID_ROWS;
                     $lngDigit = $lngVal%self::GRID_COLUMNS;
-                    $ndx = (int) ($latDigit*self::GRID_COLUMNS+$lngDigit);
+                    $ndx = self::floatToInt($latDigit*self::GRID_COLUMNS+$lngDigit);
                     $revCode .= substr(self::CODE_ALPHABET,$ndx,1);
-                    $latVal /= self::GRID_ROWS;
-                    $lngVal /= self::GRID_COLUMNS;
+                    $latVal = self::floatToInt($latVal/self::GRID_ROWS);
+                    $lngVal = self::floatToInt($lngVal/self::GRID_COLUMNS);
                 }
             }else{
-                $latVal = (int) ($latVal/pow(self::GRID_ROWS,self::GRID_CODE_LENGTH));
-                $lngVal = (int) ($lngVal/pow(self::GRID_COLUMNS,self::GRID_CODE_LENGTH));
+                $latVal = self::floatToInt($latVal/(self::GRID_ROWS ** self::GRID_CODE_LENGTH));
+                $lngVal = self::floatToInt($lngVal/(self::GRID_COLUMNS ** self::GRID_CODE_LENGTH));
             }
 
             for($i=0;$i<self::PAIR_CODE_LENGTH/2;$i++){
                 $revCode .= substr(self::CODE_ALPHABET,$lngVal%self::ENCODING_BASE,1);
                 $revCode .= substr(self::CODE_ALPHABET,$latVal%self::ENCODING_BASE,1);
-                $latVal /= self::ENCODING_BASE;
-                $lngVal /= self::ENCODING_BASE;
+                $latVal = self::floatToInt($latVal/self::ENCODING_BASE);
+                $lngVal = self::floatToInt($lngVal/self::ENCODING_BASE);
                 if($i===0){
                     $revCode .= self::SEPARATOR;
                 }
@@ -130,33 +133,32 @@ class OpenLocationCode{
 
     /**
      * @return CodeArea
-     * @throws Exception
      */
     public function decode(){
         if(!self::isFullCode($this->code)){
-            throw new Exception('Method decode() could only be called on valid full codes, code was '.$this->code.'.');
+            throw new RuntimeException('Method decode() could only be called on valid full codes, code was '.$this->code.'.');
         }
         $clean = str_replace(self::PADDING_CHARACTER,'',str_replace(self::SEPARATOR,'',$this->code));
 
-        $latVal = -self::LATITUDE_MAX * self::LAT_INTEGER_MULTIPLIER;
-        $lngVal = -self::LONGITUDE_MAX * self::LNG_INTEGER_MULTIPLIER;
+        $latVal = self::floatToInt(-self::LATITUDE_MAX * self::LAT_INTEGER_MULTIPLIER);
+        $lngVal = self::floatToInt(-self::LONGITUDE_MAX * self::LNG_INTEGER_MULTIPLIER);
 
-        $latPlaceVal = self::LAT_MSP_VALUE;
-        $lngPlaceVal = self::LNG_MSP_VALUE;
+        $latPlaceVal = self::floatToInt(self::LAT_MSP_VALUE);
+        $lngPlaceVal = self::floatToInt(self::LNG_MSP_VALUE);
         for($i=0;$i<min(strlen($clean),self::PAIR_CODE_LENGTH);$i+=2){
-            $latPlaceVal /= self::ENCODING_BASE;
-            $lngPlaceVal /= self::ENCODING_BASE;
-            $latVal += self::indexOf(self::CODE_ALPHABET,substr($clean,$i,1)) * $latPlaceVal;
-            $lngVal += self::indexOf(self::CODE_ALPHABET,substr($clean,$i+1,1)) * $lngPlaceVal;
+            $latPlaceVal = self::floatToInt($latPlaceVal/self::ENCODING_BASE);
+            $lngPlaceVal = self::floatToInt($lngPlaceVal/self::ENCODING_BASE);
+            $latVal += self::floatToInt(self::indexOf(self::CODE_ALPHABET,substr($clean,$i,1)) * $latPlaceVal);
+            $lngVal += self::floatToInt(self::indexOf(self::CODE_ALPHABET,substr($clean,$i+1,1)) * $lngPlaceVal);
         }
         for($i=self::PAIR_CODE_LENGTH;$i<min(strlen($clean),self::MAX_DIGIT_COUNT);$i++){
-            $latPlaceVal /= self::GRID_ROWS;
-            $lngPlaceVal /= self::GRID_COLUMNS;
+            $latPlaceVal = self::floatToInt($latPlaceVal/self::GRID_ROWS);
+            $lngPlaceVal = self::floatToInt($lngPlaceVal/self::GRID_COLUMNS);
             $digit = self::indexOf(self::CODE_ALPHABET,substr($clean,$i,1));
-            $row = $digit/self::GRID_COLUMNS;
+            $row = self::floatToInt($digit/self::GRID_COLUMNS);
             $col = $digit%self::GRID_COLUMNS;
-            $latVal += $row*$latPlaceVal;
-            $lngVal += $col*$lngPlaceVal;
+            $latVal += self::floatToInt($row*$latPlaceVal);
+            $lngVal += self::floatToInt($col*$lngPlaceVal);
         }
         $latitudeLo = $latVal/self::LAT_INTEGER_MULTIPLIER;
         $longitudeLo = $lngVal/self::LNG_INTEGER_MULTIPLIER;
@@ -232,7 +234,8 @@ class OpenLocationCode{
         }
 
         $codeArea = $this->decode();
-        $range = max(abs($referenceLatitude - $codeArea->getCenterLatitude()),$referenceLongitude-$codeArea->getCenterLongitude());
+        var_dump($codeArea);
+        $range = max(abs($referenceLatitude - $codeArea->getCenterLatitude()),$referenceLongitude - $codeArea->getCenterLongitude());
 
         for($i=4;$i>=1;$i--){
             if($range<(self::computeLatitudePrecision($i*2)*0.3)){
@@ -255,7 +258,7 @@ class OpenLocationCode{
         $referenceLongitude = self::normalizeLongitude($referenceLongitude);
 
         $digitsToRecover = self::SEPARATOR_POSITION - self::indexOf($this->code,self::SEPARATOR);
-        $prefixPrecision = pow(self::ENCODING_BASE,2-($digitsToRecover/2));
+        $prefixPrecision = self::ENCODING_BASE ** (2-($digitsToRecover/2));
 
         $recoveredPrefix = substr((new self($referenceLatitude,$referenceLongitude))->getCode(),0,$digitsToRecover);
         $recovered = new self($recoveredPrefix.$this->code);
@@ -285,15 +288,12 @@ class OpenLocationCode{
      * @param double $latitude
      * @param double $longitude
      * @return bool
-     * @throws Exception
      */
     public function contains($latitude,$longitude){
         $codeArea = $this->decode();
 
         return $codeArea->getSouthLatitude()<=$latitude && $latitude<$codeArea->getNorthLatitude() && $codeArea->getWestLongitude()<=$longitude && $longitude<$codeArea->getEastLongitude();
     }
-
-    //TODO equals
 
     public function __toString(){
         return $this->getCode();
@@ -405,7 +405,7 @@ class OpenLocationCode{
             return $longitude;
         }
         $CIRCLE_DEG = 2 * self::LONGITUDE_MAX;
-        return ($longitude % $CIRCLE_DEG + $CIRCLE_DEG + self::LONGITUDE_MAX) % $CIRCLE_DEG - self::LONGITUDE_MAX;
+        return fmod((fmod($longitude,$CIRCLE_DEG) + $CIRCLE_DEG + self::LONGITUDE_MAX),$CIRCLE_DEG) - self::LONGITUDE_MAX;
     }
 
     /**
@@ -425,6 +425,10 @@ class OpenLocationCode{
             return -1;
         }
         return $pos;
+    }
+
+    private static function floatToInt($float){
+        return (intval(($float+0).''));
     }
 
 }
