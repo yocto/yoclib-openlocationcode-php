@@ -225,6 +225,11 @@ class OpenLocationCode{
         return (new self($code))->isPadded();
     }
 
+    /**
+     * @param double $referenceLatitude
+     * @param double $referenceLongitude
+     * @return OpenLocationCode
+     */
     public function shorten($referenceLatitude,$referenceLongitude){
         if(!$this->isFull()){
             throw new InvalidArgumentException('shorten() method could only be called on a full code.');
@@ -234,8 +239,7 @@ class OpenLocationCode{
         }
 
         $codeArea = $this->decode();
-        var_dump($codeArea);
-        $range = max(abs($referenceLatitude - $codeArea->getCenterLatitude()),$referenceLongitude - $codeArea->getCenterLongitude());
+        $range = max(abs($referenceLatitude - $codeArea->getCenterLatitude()),abs($referenceLongitude - $codeArea->getCenterLongitude()));
 
         for($i=4;$i>=1;$i--){
             if($range<(self::computeLatitudePrecision($i*2)*0.3)){
